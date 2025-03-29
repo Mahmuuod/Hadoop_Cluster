@@ -1,0 +1,65 @@
+  services:
+    Master1:
+      image: ubuntu:22.04
+      hostname: Master1
+      ports:  
+        - "9739:9870"  #UI
+        - "8077:8088"  #RPC
+      volumes:
+        - ./data/:/data/
+        - ./code/:/code/
+      networks:
+        - hadoop_cluster
+      command: ["bash", "-c", "
+        apt update -y &&
+        apt upgrade -y &&
+        apt install -y ssh vim sudo openjdk-8-jdk sshpass netcat &&
+        exec tail -f /dev/null"]
+    Master2:
+      image: ubuntu:22.04
+      hostname: Master2
+      volumes:
+        - ./data/:/data/
+        - ./code/:/code/
+      ports:
+          - "9880:9870"
+          - "8079:8088"
+      networks:
+        - hadoop_cluster
+      command: ["bash", "-c", "
+        apt update -y &&
+        apt upgrade -y &&
+        apt install -y ssh vim sudo openjdk-8-jdk sshpass netcat &&
+        exec tail -f /dev/null"]
+    Master3:
+      image: ubuntu:22.04
+      hostname: Master3
+      volumes:
+        - ./data/:/data/
+        - ./code/:/code/
+      ports:
+          - "9881:9870"
+          - "8081:8088"
+      networks:
+        - hadoop_cluster
+      command: ["bash", "-c", "
+        apt update -y &&
+        apt upgrade -y &&
+        apt install -y ssh vim sudo openjdk-8-jdk sshpass netcat &&
+        exec tail -f /dev/null"]
+    Worker1:
+      image: ubuntu:22.04
+      hostname: Worker1
+      volumes:
+        - ./data/:/data/
+        - ./code/:/code/
+      networks:
+        - hadoop_cluster
+      command: ["bash", "-c", "
+        apt update -y &&
+        apt upgrade -y &&
+        apt install -y ssh vim sudo openjdk-8-jdk sshpass netcat &&
+        exec tail -f /dev/null"]
+  networks:
+    hadoop_cluster:
+      driver: bridge
