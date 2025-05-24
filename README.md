@@ -264,7 +264,66 @@ This `docker-compose.yml` defines a high-availability Hadoop cluster with **3 Ma
 - Add Dockerfiles and configuration for Hive, Hadoop, and Metastore inside the context directory
 
 ---
+## Configurations
+---
 
+## 1. `core-site.xml`
+
+Defines the Hadoop core settings:
+
+- `fs.defaultFS`: HDFS URI (e.g., `hdfs://mycluster`)
+- Zookeeper quorum for HA: `dfs.ha.zookeeper.quorum`, `ha.zookeeper.quorum`
+- Proxy user permissions: `hadoop.proxyuser.hadoop.hosts`, `hadoop.proxyuser.hadoop.groups`
+- Google Cloud Storage integration:
+  - `fs.gs.impl` and `fs.AbstractFileSystem.gs.impl`
+  - Service account key: `google.cloud.auth.service.account.json.keyfile`
+
+---
+
+## 2. `hdfs-site.xml`
+
+Configures HDFS and HA for NameNodes:
+
+- `dfs.nameservices`: Cluster ID (e.g., `mycluster`)
+- `dfs.ha.namenodes.mycluster`: HA node IDs (e.g., `nn1,nn2,nn3`)
+- RPC and HTTP addresses for each NameNode (`Master1`, `Master2`, `Master3`)
+- JournalNode shared edits and directories
+- HA failover and fencing method (`shell(/bin/true)`)
+- DataNode settings and replication factor
+
+---
+
+## 3. `mapred-site.xml`
+
+Configures the MapReduce framework:
+
+- Uses `yarn` as execution framework
+- Sets `HADOOP_MAPRED_HOME` for AM, Map, and Reduce environments
+
+---
+
+## 4. `yarn-site.xml`
+
+Enables HA for YARN ResourceManager:
+
+- `yarn.resourcemanager.ha.enabled`: Enabled
+- `yarn.resourcemanager.cluster-id`: e.g., `cluster1`
+- Defines `rm1`, `rm2`, `rm3` with hostnames and UI ports
+- Points to Zookeeper quorum
+- Enables `mapreduce_shuffle` service on NodeManager
+
+---
+
+## 5. `hadoop-env.sh`
+
+Sets environment variables:
+
+```bash
+export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
+export HADOOP_OS_TYPE=${HADOOP_OS_TYPE:-$(uname -s)}
+```
+
+---
 Maintained by **Data Engineering Enthusiasts**.
 
 ## 👤 Author
