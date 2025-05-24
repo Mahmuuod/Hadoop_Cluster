@@ -187,6 +187,8 @@ To build and run the image:
 docker build -t hadoop-cluster .
 docker run -it --rm hadoop-cluster
 ```
+---
+## Docker Compose
 
 ## 📂 Required Files
 
