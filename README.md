@@ -195,14 +195,73 @@ Ensure these are present in your build context:
 - `./data/configs/hadoop/*`: Hadoop XML configuration files
 - `./data/configs/zoo.cfg`: Zookeeper configuration
 - `./code/hadoop_script.sh`: Initialization script
+This `docker-compose.yml` defines a high-availability Hadoop cluster with **3 Master nodes**, **1 Worker node**, **Zookeeper support**, **Hive metastore**, and a **PostgreSQL database** as the Hive metastore backend. Each component is isolated in its own container, all communicating over a dedicated Docker bridge network.
 
-## 💡 Suggested Improvements
+---
 
-- Use Docker Compose for multi-container orchestration
-- Externalize credentials to environment variables
-- Implement health checks and logging
-- Use build arguments for versioning flexibility
-- Consider Alpine base image for reduced size
+## 📦 Services Overview
+
+- **Master1, Master2, Master3**: Hadoop NameNodes with UI ports exposed and Zookeeper journaling
+- **Worker1**: Hadoop DataNode
+- **Postgres**: Metastore database for Hive
+- **meta-store, meta-store2**: Hive Metastore services
+- **hive-server**: HiveServer2 service for executing queries
+
+---
+
+## 🔧 Deployment Features
+
+- **Resource Constraints**: Each service defines CPU and memory limits/reservations.
+- **Healthchecks**: Ensures services only start if their dependencies are healthy.
+- **Volumes**: Persistent storage for journals, namenodes, datanodes, Zookeeper, and PostgreSQL data.
+- **Networking**: All services communicate through the `hadoop_cluster` bridge network.
+
+---
+
+## 🚀 How to Use
+
+1. **Build the image if needed** (for meta-store, hive-server):
+    ```bash
+    docker-compose build
+    ```
+
+2. **Start the cluster**:
+    ```bash
+    docker-compose up -d
+    ```
+
+3. **Check health and logs**:
+    ```bash
+    docker ps
+    docker logs <container_name>
+    ```
+
+4. **Access Web UIs**:
+    - Hadoop NameNode UI (Master1): `http://localhost:8004`
+    - YARN ResourceManager UI (Master1): `http://localhost:8003`
+    - HiveServer2 (JDBC): `jdbc:hive2://localhost:10000`
+    - Hive Metastore: Ports `9083` and `9084` for HA setup
+
+---
+
+## 📂 Volumes and Storage
+
+- `jn1`, `jn2`, `jn3`: Hadoop JournalNode directories
+- `nn1`, `nn2`, `nn3`: NameNode storage
+- `zk1`, `zk2`, `zk3`: Zookeeper data
+- `sn1`: DataNode storage
+- `postgres_data`: PostgreSQL persistence
+
+---
+
+## ⚠️ Notes
+
+- `depends_on` with `condition: service_healthy` requires Docker Compose v3.4+ and Docker Engine 1.29+
+- Ensure your custom Hadoop image `hadoop-image:01` is built and available locally
+- Adjust exposed ports if running on a shared host
+- Add Dockerfiles and configuration for Hive, Hadoop, and Metastore inside the context directory
+
+---
 
 Maintained by **Data Engineering Enthusiasts**.
 
