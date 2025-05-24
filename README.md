@@ -340,6 +340,66 @@ Essential for enabling HA in Hadoop and YARN:
 
 These servers enable quorum-based leader election for HA coordination across Hadoop NameNodes and YARN ResourceManagers.
 ---
+
+# 🚀 Hadoop Bootstrap Script (`hadoop_script.sh`)
+
+This script initializes and starts Hadoop, YARN, HBase, and Zookeeper services inside a Docker container. It handles first-time cluster formatting as well as regular service startup based on the node type, inferred from the hostname.
+
+---
+
+## 🧠 Logic Overview
+
+- Starts SSH service
+- Extracts the node hostname and ID using `hostname` and regex
+- Checks if HDFS has been previously formatted (`/opt/hadoop/name/current`)
+- If not, performs **first-time cluster setup**
+- If already formatted, performs **regular service startup**
+
+---
+
+## ⚙️ Behavior by Node Type
+
+### 🟩 `master*`
+- Starts JournalNode
+- If `NodeID == 1` (Master1):
+  - Formats `namenode` and `zkfc`
+  - Starts NameNode, ZKFC, ResourceManager
+- If `NodeID != 1` (Master2, Master3):
+  - Waits for Master1 services to be ready
+  - Bootstraps Standby NameNode
+  - Starts NameNode, ZKFC, ResourceManager
+
+### 🟨 `worker*`
+- Starts `datanode`, `nodemanager`, and HBase `regionserver`
+
+### 🟦 `zk*`
+- Sets Zookeeper `myid`
+- Starts `zkServer.sh`
+
+### 🟥 `hmaster*`
+- Creates `/hbase` directory in HDFS and starts HBase Master
+
+### 🟫 Unknown
+- Logs that no matching role was applied
+
+---
+
+## 🔁 Re-Start Behavior (if already formatted)
+
+Each node restarts only the relevant daemons:
+- `master*`: JournalNode, NameNode, ZKFC, ResourceManager
+- `worker*`: DataNode, NodeManager, RegionServer
+- `zk*`: Zookeeper
+- `hmaster*`: HBase Master
+
+---
+
+## 🧷 Notes
+
+- Netcat (`nc`) is used to ensure critical ports are up before continuing
+- The final line `tail -f /dev/null & wait` keeps the container running after services start
+
+---
 Maintained by **Data Engineering Enthusiasts**.
 
 ## 👤 Author
