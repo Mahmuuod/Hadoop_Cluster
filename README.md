@@ -322,7 +322,23 @@ Sets environment variables:
 export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
 export HADOOP_OS_TYPE=${HADOOP_OS_TYPE:-$(uname -s)}
 ```
+---
 
+## 6. `zoo.cfg` (Zookeeper Configuration)
+
+Essential for enabling HA in Hadoop and YARN:
+
+- `tickTime=2000`: Time unit in milliseconds used by Zookeeper
+- `dataDir=/opt/zookeeper/data`: Directory where Zookeeper stores in-memory data snapshots
+- `clientPort=2181`: Port where the server listens for client connections
+- `initLimit=5`: Time the leader waits for followers during startup
+- `syncLimit=2`: Time for followers to sync with the leader
+- Server list:
+  - `server.1=Master1:2888:3888`
+  - `server.2=Master2:2888:3888`
+  - `server.3=Master3:2888:3888`
+
+These servers enable quorum-based leader election for HA coordination across Hadoop NameNodes and YARN ResourceManagers.
 ---
 Maintained by **Data Engineering Enthusiasts**.
 
