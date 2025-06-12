@@ -1,0 +1,222 @@
+  services:
+    Master1:
+      image: hadoop-image:01
+      hostname: Master1
+      container_name: Master1
+
+      deploy:
+        resources:
+          limits:
+            cpus: "1.0"        
+            memory: 1024M      
+          reservations:
+            cpus: "0.5"        
+            memory: 512M  
+      ports:  
+        - "8004:9870"  #UI
+        - "8003:8088"  #UI
+      volumes:
+        - ./data/:/data/
+        - ./code/:/code/
+        - jn1:/opt/hadoop/journal
+        - nn1:/opt/hadoop/name
+        - zk1:/opt/zookeeper/data
+      networks:
+        - hadoop_cluster  
+      healthcheck:
+        test: ["CMD", "nc", "-z", "Master1", "9870"]
+        interval: 10s
+        timeout: 5s
+        retries: 7
+      restart: always
+    Master2:
+      image: hadoop-image:01
+      hostname: Master2
+      container_name: Master2
+      deploy:
+        resources:
+          limits:
+            cpus: "1.0"        
+            memory: 1024M     
+          reservations:
+            cpus: "0.5"        
+            memory: 512M  
+      volumes:
+        - ./data/:/data/
+        - ./code/:/code/
+        - jn2:/opt/hadoop/journal
+        - nn2:/opt/hadoop/name
+        - zk2:/opt/zookeeper/data
+      ports:
+          - "8002:9870"
+          - "8001:8088"
+      networks:
+        - hadoop_cluster
+      healthcheck:
+        test: ["CMD", "nc", "-z", "Master2", "9870"]
+        interval: 10s
+        timeout: 5s
+        retries: 7
+      restart: always
+    Master3:
+      image: hadoop-image:01
+      hostname: Master3
+      container_name: Master3
+
+      deploy:
+        resources:
+          limits:
+            cpus: "1.0"        
+            memory: 1024M      
+          reservations:
+            cpus: "0.5"        
+            memory: 512M  
+      volumes:
+        - ./data/:/data/
+        - ./code/:/code/
+        - jn3:/opt/hadoop/journal
+        - nn3:/opt/hadoop/name
+        - zk3:/opt/zookeeper/data
+      ports:
+          - "8000:9870"
+          - "8009:8088"
+
+      networks:
+        - hadoop_cluster
+      healthcheck:
+        test: ["CMD", "nc", "-z", "Master3", "9870"]
+        interval: 10s
+        timeout: 5s
+        retries: 7
+      restart: always
+    Worker1:
+      image: hadoop-image:01
+      hostname: Worker1
+      container_name: Worker1
+
+      deploy:
+        resources:
+          limits:
+            cpus: "1.0"        
+            memory: 1024M      
+          reservations:
+            cpus: "0.5"        
+            memory: 512M  
+      volumes:
+        - ./data/:/data/
+        - ./code/:/code/
+        - sn1:/opt/hadoop/data
+      networks:
+        - hadoop_cluster
+      healthcheck:
+        test: ["CMD", "nc", "-z", "Worker1", "9866"]
+        interval: 10s
+        timeout: 5s
+        retries: 7
+      restart: always
+      depends_on:
+        Master1:
+          condition: service_healthy
+        Master2:
+          condition: service_healthy
+        Master3:
+          condition: service_healthy
+
+    postgres:
+      image: postgres:13
+      container_name: postgres
+      environment:
+        POSTGRES_USER: hive
+        POSTGRES_PASSWORD: hive
+        POSTGRES_DB: metastore
+      volumes:
+        - postgres_data:/var/lib/postgresql/data
+      networks:
+        - hadoop_cluster
+      ports:
+        - "5432:5432"  # HiveServer2 port
+      healthcheck:
+        test: ["CMD-SHELL", "psql -U hive -d metastore"]
+        interval: 5s
+        timeout: 3s
+        retries: 5
+      depends_on:
+        Worker1:
+          condition: service_healthy
+    meta-store:
+      build:
+        context: .
+      hostname: meta-store
+      container_name: meta-store
+      ports:
+        - "9083:9083"
+      volumes:
+        - ./data/:/data/
+      networks:
+        - hadoop_cluster
+      depends_on:
+          postgres:
+            condition: service_healthy
+      healthcheck:
+        test: ["CMD", "nc", "-z", "meta-store", "9083"]
+        interval: 5s
+        timeout: 3s
+        retries: 5
+    meta-store2:
+      build:
+        context: .
+      hostname: meta-store2
+      container_name: meta-store2
+      ports:
+        - "9084:9083"
+      volumes:
+        - ./data/:/data/
+      networks:
+        - hadoop_cluster
+      depends_on:
+          postgres:
+            condition: service_healthy
+      healthcheck:
+        test: ["CMD", "nc", "-z", "meta-store2", "9083"]
+        interval: 5s
+        timeout: 3s
+        retries: 5
+
+    hive-server:
+      build:
+        context: .
+      hostname: hive
+      container_name: hive
+      volumes:
+        - ./data/:/data/
+      ports:
+        - "10000:10000" # HiveServer2 port
+      networks:
+        - hadoop_cluster
+      depends_on:
+          meta-store:
+            condition: service_healthy
+      healthcheck:
+        test: ["CMD", "nc -z localhost 10000"]
+        interval: 5s
+        timeout: 3s
+        retries: 10
+
+
+  networks:
+    hadoop_cluster:
+      driver: bridge
+  volumes:
+    jn1:
+    nn1:
+    zk1:
+    jn2:
+    nn2:
+    zk2:
+    jn3:
+    nn3:
+    zk3:
+    sn1:
+    postgres_data:
+    
+    
